@@ -169,8 +169,8 @@ def parse_status(homework):
         logging.info('Данные из словаря получены успешно.')
 
         return (
-            f'Изменился статус проверки работы: "{homework_name}", '
-            f'вердикт: {verdict}')
+            'Изменился статус проверки работы '
+            f'"{homework_name}"{verdict}')
 
     except KeyError as e:
         raise KeyError(f"Не найден ключ в словаре: {e}")
