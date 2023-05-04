@@ -122,8 +122,7 @@ def check_response(response):
         if type(response) != dict:
             message = (
                 'check_response(), входные данные '
-                'не соответствуют ожидаемым "dict".'
-                )
+                'не соответствуют ожидаемым "dict".')
             logging.error(message)
             raise TypeError(message)
         if 'homeworks' not in response:
