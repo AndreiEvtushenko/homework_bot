@@ -1,4 +1,3 @@
-import datetime
 import logging
 import os
 import sys
@@ -20,8 +19,7 @@ logging.basicConfig(level=logging.DEBUG,
 file_handler = logging.FileHandler('log_bot.log', encoding='utf-8')
 file_handler.setLevel(logging.DEBUG)
 file_handler.setFormatter(
-    logging.Formatter('%(asctime)s - %(levelname)s - %(message)s')
-    )
+    logging.Formatter('%(asctime)s - %(levelname)s - %(message)s'))
 logging.getLogger().addHandler(file_handler)
 
 RETRY_PERIOD = 600
@@ -37,17 +35,17 @@ HOMEWORK_VERDICTS = {
 
 
 def check_tokens():
-    '''
-    Проверяет доступность переменных окружения,
+    """
+    Проверяет доступность переменных окружения.
     которые необходимы для работы программы.
-    '''
+    """
     logging.info('check_tokens(), проверка переменных.')
     if PRACTICUM_TOKEN is None or not PRACTICUM_TOKEN:
         message = (
             'check_tokens(), '
             'Переменная "PRACTICUM_TOKEN" не доступна.'
             'Работа программы принудительно завершена.'
-            )
+        )
         logging.critical(message)
         sys.exit(message)
     if TELEGRAM_TOKEN is None or not TELEGRAM_TOKEN:
@@ -55,7 +53,7 @@ def check_tokens():
             'check_tokens(), '
             'Переменная "TELEGRAM_TOKEN" не доступна.'
             'Работа программы принудительно завершена.'
-            )
+        )
         logging.critical(message)
         sys.exit(message)
     if TELEGRAM_CHAT_ID is None or not TELEGRAM_CHAT_ID:
@@ -63,7 +61,7 @@ def check_tokens():
             'check_tokens(), '
             'Переменная "TELEGRAM_CHAT_ID" не доступна.'
             'Работа программы принудительно завершена.'
-            )
+        )
         logging.critical(message)
         sys.exit(message)
     else:
@@ -71,9 +69,7 @@ def check_tokens():
 
 
 def send_message(bot, message):
-    '''
-    Отправляет сообщения пользователю в телеграмм.
-    '''
+    """Отправляет сообщения пользователю в телеграмм."""
     try:
         logging.info('send_message(). Отправляю сообщение.')
         if type(message) != str:
@@ -94,10 +90,10 @@ def send_message(bot, message):
 
 
 def get_api_answer(timestamp):
-    '''
+    """
     Делает запрос к эндпоинту API-сервиса.
     Возвращает словарь.
-    '''
+    """
     logging.info('get_api_answer(), делаю запрос к апи.')
     params = {'from_date': timestamp}
     try:
@@ -110,10 +106,6 @@ def get_api_answer(timestamp):
             logging.error(message)
             raise requests.HTTPError(message)
         elif response.status_code == 200:
-            # homeworks = response.json()
-            # if not isinstance(homeworks, dict):
-            #     logging.error('Не словарь.')
-            #     raise TypeError('Не словарь.')
             logging.info('get_api_answer(), запрос к API завершен успешно.')
             return response.json()
     except requests.exceptions.RequestException as e:
@@ -123,66 +115,41 @@ def get_api_answer(timestamp):
 
 
 def check_response(response):
-    '''
-    Проверяет ответ API на соответствие документации.
-    '''
+    """Проверяет ответ API на соответствие документации."""
     logging.info('check_response(), проверяю данные из API')
-    if type(response) != dict:
-        message = (
-            'check_response(), входные данные '
-            'не соответствуют ожидаемым "dict".'
-            )
-        logging.error(message)
-        raise TypeError(message)
-    if 'homeworks' not in response:
-        message = ('check_response(), '
-                   'словарь не содержит ключа "homeworks"'
-                   )
-        logging.error(message)
-        raise KeyError(message)
-    elif type(response['homeworks']) != list:
-        message = (
-            'check_response(), входные данные '
-            'не соответствуют ожидаемому типу: "list".'
-            )
-        logging.error(message)
-        raise TypeError(message)
+
     try:
         if type(response) != dict:
             message = (
                 'check_response(), входные данные '
-                'не соответствуют ожидаемому типу: "dict".'
+                'не соответствуют ожидаемым "dict".'
                 )
             logging.error(message)
             raise TypeError(message)
-        elif 'homeworks' not in response:
+        if 'homeworks' not in response:
             message = ('check_response(), '
-                       'словарь не содержить ключа "homeworks"'
-                       )
+                       'словарь не содержит ключа "homeworks"')
             logging.error(message)
             raise KeyError(message)
-        elif type(response['homeworks']) != list:
+        if type(response['homeworks']) != list:
             message = (
                 'check_response(), входные данные '
-                'не соответствуют ожидаемому типу: "list".'
-                )
+                'не соответствуют ожидаемому типу: "list".')
             logging.error(message)
             raise TypeError(message)
-        logging.info('check_response(), данные из апи проверены.')
     except Exception as e:
         message = (
             f'check_response(), тип ошибки: {type(e)}, '
-            f'ошибка: {e} при проверке данных из API'
-            )
+            f'ошибка: {e} при проверке данных из API')
         logging.error(message)
 
 
 def parse_status(homework):
-    '''
+    """
     Проверяет полученные данные.
     Извлекает из словаря стату.
     Возвращает подготовленную строку для отправки.
-    '''
+    """
     logging.info('parse_status(), проверяю и извлекаю данныею')
     try:
         if 'status' in homework:
@@ -204,8 +171,7 @@ def parse_status(homework):
         else:
             message = (
                 'parse_status(), '
-                'нет ключа "homework_name" в словаре homework'
-                )
+                'нет ключа "homework_name" в словаре homework')
             logging.info(message)
             raise KeyError(message)
 
@@ -213,8 +179,7 @@ def parse_status(homework):
 
         return (
             f'Изменился статус проверки работы: "{homework_name}", '
-            f'вердикт: {verdict}'
-            )
+            f'вердикт: {verdict}')
 
     except KeyError as e:
         raise KeyError(f"Не найден ключ в словаре: {e}")
@@ -228,7 +193,6 @@ def parse_status(homework):
 
 def main():
     """Основная логика работы бота."""
-
     logging.info('main(), запуск приложения Homework_bot.')
 
     check_tokens()
