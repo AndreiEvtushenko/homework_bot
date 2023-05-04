@@ -117,30 +117,23 @@ def get_api_answer(timestamp):
 def check_response(response):
     """Проверяет ответ API на соответствие документации."""
     logging.info('check_response(), проверяю данные из API')
-
-    try:
-        if type(response) != dict:
-            message = (
-                'check_response(), входные данные '
-                'не соответствуют ожидаемым "dict".')
-            logging.error(message)
-            raise TypeError(message)
-        if 'homeworks' not in response:
-            message = ('check_response(), '
-                       'словарь не содержит ключа "homeworks"')
-            logging.error(message)
-            raise KeyError(message)
-        if type(response['homeworks']) != list:
-            message = (
-                'check_response(), входные данные '
-                'не соответствуют ожидаемому типу: "list".')
-            logging.error(message)
-            raise TypeError(message)
-    except Exception as e:
+    if type(response) != dict:
         message = (
-            f'check_response(), тип ошибки: {type(e)}, '
-            f'ошибка: {e} при проверке данных из API')
+            'check_response(), входные данные '
+            'не соответствуют ожидаемым "dict".')
         logging.error(message)
+        raise TypeError(message)
+    if 'homeworks' not in response:
+        message = ('check_response(), '
+                   'словарь не содержит ключа "homeworks"')
+        logging.error(message)
+        raise KeyError(message)
+    if type(response['homeworks']) != list:
+        message = (
+            'check_response(), входные данные '
+            'не соответствуют ожидаемому типу: "list".')
+        logging.error(message)
+        raise TypeError(message)
 
 
 def parse_status(homework):
