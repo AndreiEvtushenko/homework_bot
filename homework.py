@@ -10,7 +10,7 @@ from dotenv import load_dotenv
 load_dotenv()
 
 PRACTICUM_TOKEN = os.getenv('PRACTICUM_TOKEN')
-TELEGRAM_TOKEN = os.getenv('TOKEN')
+TELEGRAM_TOKEN = os.getenv('TELEGRAM_TOKEN')
 TELEGRAM_CHAT_ID = os.getenv('TELEGRAM_CHAT_ID')
 
 logging.basicConfig(level=logging.DEBUG,
@@ -84,7 +84,6 @@ def send_message(bot, message):
             message = 'send_message(). Время ожидания соединения истекло.'
         else:
             message = 'send_message(). Ошибка при отправке сообщения.'
-        bot.send_message(chat_id=TELEGRAM_CHAT_ID, text=message)
     except Exception as e:
         logging.error(f'send_message(). Ошибка {e} при отправке сообщения.')
 
