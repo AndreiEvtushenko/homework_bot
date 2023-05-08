@@ -1,11 +1,15 @@
+import datetime
 import logging
 import os
 import sys
 import time
+from http import HTTPStatus
 
 import requests
 import telegram
 from dotenv import load_dotenv
+from exсeptions import TokensCustomException
+from telegram.error import TelegramError
 
 load_dotenv()
 
@@ -36,36 +40,22 @@ HOMEWORK_VERDICTS = {
 
 def check_tokens():
     """
-    Проверяет доступность переменных окружения.
-    которые необходимы для работы программы.
+    Проверяет доступность переменных окружения
+    необходимые для работы программы.
     """
     logging.info('check_tokens(), проверка переменных.')
-    if PRACTICUM_TOKEN is None or not PRACTICUM_TOKEN:
-        message = (
-            'check_tokens(), '
-            'Переменная "PRACTICUM_TOKEN" не доступна.'
-            'Работа программы принудительно завершена.'
-        )
-        logging.critical(message)
-        sys.exit(message)
-    if TELEGRAM_TOKEN is None or not TELEGRAM_TOKEN:
-        message = (
-            'check_tokens(), '
-            'Переменная "TELEGRAM_TOKEN" не доступна.'
-            'Работа программы принудительно завершена.'
-        )
-        logging.critical(message)
-        sys.exit(message)
-    if TELEGRAM_CHAT_ID is None or not TELEGRAM_CHAT_ID:
-        message = (
-            'check_tokens(), '
-            'Переменная "TELEGRAM_CHAT_ID" не доступна.'
-            'Работа программы принудительно завершена.'
-        )
-        logging.critical(message)
-        sys.exit(message)
-    else:
+
+    tokens_list = [PRACTICUM_TOKEN, TELEGRAM_TOKEN, TELEGRAM_CHAT_ID]
+    if all(tokens_list) is True:
         logging.info('check_tokens(), проверка переменных успешно завершена.')
+        return True
+    else:
+        message = (
+            'check_tokens(), '
+            'Переменные окружения не доступны.'
+        )
+        logging.critical(message)
+        raise TokensCustomException(message)
 
 
 def send_message(bot, message):
@@ -76,14 +66,16 @@ def send_message(bot, message):
             logging.error('send_message(). Ошибка типа сообщения.')
             raise TypeError('send_message(). Неверный тип сообщения.')
         bot.send_message(chat_id=TELEGRAM_CHAT_ID, text=message)
-        logging.debug('send_message(). Сообщение отправлено.')
-    except (telegram.error.ChatMigrated,
-            telegram.error.NetworkError) as e:
-        logging.error(f'send_message(). Ошибка {e} при отправке сообщения.')
-        if isinstance(e, telegram.error.TimedOut):
-            message = 'send_message(). Время ожидания соединения истекло.'
-        else:
-            message = 'send_message(). Ошибка при отправке сообщения.'
+        logging.debug(f'send_message(), {message}')
+    except telegram.error.TimedOut as e:
+        logging.error(
+            f'send_message(), время ожидания соединения Telegram истекло: {e}')
+    except telegram.error.RetryAfter as e:
+        logging.error(
+            f'send_message(), превышено количество запросов в Telegram: {e}')
+    except TelegramError as e:
+        logging.error(
+            f'send_message(), ошибка Telegram при отправке сообщения: {e}')
     except Exception as e:
         logging.error(f'send_message(). Ошибка {e} при отправке сообщения.')
 
@@ -97,9 +89,9 @@ def get_api_answer(timestamp):
     params = {'from_date': timestamp}
     try:
         response = requests.get(ENDPOINT, headers=HEADERS, params=params)
-        if response.status_code != 200:
+        if response.status_code != HTTPStatus.OK:
             message = (
-                f'get_api_answer(), API не доступно. '
+                'get_api_answer(), API не доступно. '
                 f'Ошибка: {response.status_code}'
             )
             logging.error(message)
@@ -133,6 +125,8 @@ def check_response(response):
             'не соответствуют ожидаемому типу: "list".')
         logging.error(message)
         raise TypeError(message)
+    else:
+        logging.info('check_response(), проверка завершена успешно')
 
 
 def parse_status(homework):
@@ -142,57 +136,47 @@ def parse_status(homework):
     Возвращает подготовленную строку для отправки.
     """
     logging.info('parse_status(), проверяю и извлекаю данныею')
-    try:
-        if 'status' in homework:
-            value = homework['status']
-            if value in HOMEWORK_VERDICTS:
-                verdict = HOMEWORK_VERDICTS[value]
-                logging.info('parse_status(), статус работы извлечен успешно.')
-            else:
-                message = f'parse_status(), неизвестный статус работы: {value}'
-                logging.info(message)
-                raise ValueError(message)
+    if 'homework_name' not in homework:
+        message = 'Ключа "homework_name" нет в ответе API домашки.'
+        logging.error(message)
+        raise KeyError(message)
+    if 'status' in homework:
+        value = homework['status']
+        if value in HOMEWORK_VERDICTS:
+            verdict = HOMEWORK_VERDICTS[value]
+            logging.info('parse_status(), статус работы извлечен успешно.')
         else:
-            message = 'parse_status(), нет ключа "status" в словаре homework'
+            message = f'parse_status(), неизвестный статус работы: {value}'
             logging.info(message)
-            raise KeyError(message)
+            raise ValueError(message)
 
-        if 'homework_name' in homework:
-            homework_name = homework['homework_name']
-        else:
-            message = (
-                'parse_status(), '
-                'нет ключа "homework_name" в словаре homework')
-            logging.info(message)
-            raise KeyError(message)
+    homework_name = homework['homework_name']
 
-        logging.info('Данные из словаря получены успешно.')
+    logging.info('Данные из словаря получены успешно.')
 
-        return (
-            'Изменился статус проверки работы '
-            f'"{homework_name}"{verdict}')
-
-    except KeyError as e:
-        raise KeyError(f"Не найден ключ в словаре: {e}")
-    except ValueError as e:
-        raise ValueError(f"Ошибка: {e}")
-    except Exception as e:
-        logging.error(f"Ошибка: {type(e).__name__}. Ошибка словаря")
-        return (f"Ошибка: {type(e).__name__}. Ошибка при обработке словаря."
-                f'Работа ещё не принята в обработку')
+    return (
+        'Изменился статус проверки работы '
+        f'"{homework_name}"{verdict}')
 
 
 def main():
     """Основная логика работы бота."""
     logging.info('main(), запуск приложения Homework_bot.')
 
-    check_tokens()
+    try:
+        check_tokens()
+    except TokensCustomException as e:
+        message = f'Принудительное завершение работы программы. Ошибка: {e}.'
+        logging.error(message)
+        sys.exit(message)
 
     logging.info('main(), запускаю бот.')
     bot = telegram.Bot(token=TELEGRAM_TOKEN)
     logging.info('main(), бот запущен.')
 
-    timestamp = int(time.time())
+    # timestamp = int(time.time())
+    dt = datetime.datetime(2020, 3, 1, 0, 0, 0)
+    timestamp = int(time.mktime(dt.timetuple()))
 
     while True:
         try:
@@ -202,7 +186,6 @@ def main():
             if not homeworks['homeworks']:
                 message = 'bot, домашняя работа не поступила на проверку'
                 logging.info(message)
-                send_message(bot, message)
 
             else:
                 homework = homeworks['homeworks'][0]

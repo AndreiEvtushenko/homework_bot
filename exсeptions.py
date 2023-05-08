@@ -4,3 +4,7 @@ class CustomException(Exception):
 
 class AnotherCustomException(Exception):
     pass
+
+
+class TokensCustomException(Exception):
+    pass
