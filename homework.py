@@ -1,4 +1,3 @@
-import datetime
 import logging
 import os
 import sys
@@ -40,8 +39,8 @@ HOMEWORK_VERDICTS = {
 
 def check_tokens():
     """
-    Проверяет доступность переменных окружения
-    необходимые для работы программы.
+    Проверяет доступность переменных окружения.
+    необходимых для работы программы.
     """
     logging.info('check_tokens(), проверка переменных.')
 
@@ -174,9 +173,7 @@ def main():
     bot = telegram.Bot(token=TELEGRAM_TOKEN)
     logging.info('main(), бот запущен.')
 
-    # timestamp = int(time.time())
-    dt = datetime.datetime(2020, 3, 1, 0, 0, 0)
-    timestamp = int(time.mktime(dt.timetuple()))
+    timestamp = int(time.time())
 
     while True:
         try:
