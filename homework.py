@@ -95,7 +95,7 @@ def get_api_answer(timestamp):
             )
             logging.error(message)
             raise requests.HTTPError(message)
-        elif response.status_code == 200:
+        elif response.status_code == HTTPStatus.OK:
             logging.info('get_api_answer(), запрос к API завершен успешно.')
             return response.json()
     except requests.exceptions.RequestException as e:
@@ -175,6 +175,8 @@ def main():
 
     timestamp = int(time.time())
 
+    curent_message = ''
+
     while True:
         try:
             homeworks = get_api_answer(timestamp)
@@ -187,7 +189,13 @@ def main():
             else:
                 homework = homeworks['homeworks'][0]
                 message = parse_status(homework)
-                send_message(bot, message)
+
+                if curent_message == message:
+                    message = 'bot, статус домашней работы не изменился'
+                    logging.info(message)
+                else:
+                    curent_message = message
+                    send_message(bot, curent_message)
 
         except Exception as e:
             message = f'Сбой в работе программы: {e}'
